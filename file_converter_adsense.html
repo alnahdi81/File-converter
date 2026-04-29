@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محول الملفات الذكي</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #06b6d4;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --darker: #020617;
+            --card: #1e293b;
+            --card-hover: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --ad-bg: #1a1f2e;
+            --ad-border: #2d3748;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--darker);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ============ AD SLOTS STYLES ============ */
+        .ad-slot {
+            background: var(--ad-bg);
+            border: 1px solid var(--ad-border);
+            border-radius: 12px;
+            padding: 12px;
+            margin: 15px 0;
+            text-align: center;
+            min-height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ad-slot::before {
+            content: 'إعلان Google AdSense';
+            position: absolute;
+            top: 4px;
+            left: 8px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        .ad-slot .ad-placeholder {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .ad-slot-leaderboard {
+            min-height: 90px;
+            max-width: 728px;
+            margin: 15px auto;
+        }
+
+        .ad-slot-medium {
+            min-height: 250px;
+            max-width: 300px;
+            margin: 15px auto;
+        }
+
+        .ad-slot-wide {
+            min-height: 280px;
+            max-width: 336px;
+            margin: 15px auto;
+        }
+
+        .ad-slot-anchor {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            border-radius: 12px 12px 0 0;
+            margin: 0;
+            min-height: 60px;
+            background: rgba(26, 31, 46, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .ad-slot-in-article {
+            min-height: 280px;
+            max-width: 100%;
+            margin: 20px 0;
+        }
+
+        /* Ad label for compliance */
+        .ad-label {
+            display: block;
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            opacity: 0.6;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-animation .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--secondary);
+            bottom: -50px;
+            left: -50px;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: var(--accent);
+            top: 50%;
+            left: 50%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.9); }
+            75% { transform: translate(20px, 20px) scale(1.05); }
+        }
+
+        /* Header */
+        header {
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.7);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text);
+        }
+
+        .nav-links a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 40px 20px 30px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--text), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Tools Container */
+        .tools-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        /* Tool Card */
+        .tool-card {
+            background: var(--card);
+            border-radius: 24px;
+            padding: 35px;
+            border: 1px solid var(--border);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transform: scaleX(0);
+            transition: transform 0.4s;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+        }
+
+        .tool-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .tool-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .tool-icon.pdf { background: linear-gradient(135deg, #ef4444, #f97316); }
+        .tool-icon.compress { background: linear-gradient(135deg, #10b981, #06b6d4); }
+        .tool-icon.merge { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+        .tool-icon.split { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+
+        .tool-card h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .tool-card p {
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(30, 41, 59, 0.5);
+            position: relative;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .upload-area h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .upload-area p {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+
+        .upload-area input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* File List */
+        .file-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--darker);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .file-item .file-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .file-item .file-info {
+            flex: 1;
+        }
+
+        .file-item .file-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-item .file-size {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .file-item .remove-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .file-item .remove-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+        }
+
+        /* Progress */
+        .progress-container {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--darker);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 4px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Result */
+        .result-area {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 12px;
+            display: none;
+            text-align: center;
+        }
+
+        .result-area.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-area .success-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .result-area h3 {
+            color: var(--success);
+            margin-bottom: 5px;
+        }
+
+        .result-area p {
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        /* Options */
+        .options {
+            margin: 20px 0;
+            padding: 15px;
+            background: var(--darker);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .options h4 {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: var(--text-muted);
+        }
+
+        .option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .option-row label {
+            font-size: 0.9rem;
+        }
+
+        .option-row input[type="range"] {
+            width: 150px;
+        }
+
+        .option-row select {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-family: 'Tajawal';
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: var(--darker);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-item .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-light);
+        }
+
+        .stat-item .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        /* Sidebar Ad Container */
+        .sidebar-ad {
+            position: sticky;
+            top: 100px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px 100px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            margin-top: 60px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .tools-container { grid-template-columns: 1fr; padding: 15px; }
+            .tool-card { padding: 25px; }
+            header { padding: 15px 20px; }
+            .nav-links { display: none; }
+            .ad-slot-leaderboard { max-width: 100%; }
+            .ad-slot-anchor { min-height: 50px; }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--card);
+            color: var(--text);
+            padding: 15px 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            transition: transform 0.3s;
+            font-weight: 600;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.error {
+            border-color: var(--danger);
+        }
+
+        .toast.success {
+            border-color: var(--success);
+        }
+
+        /* Legal Pages Link */
+        .legal-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legal-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+
+        .legal-links a:hover {
+            color: var(--primary-light);
+        }
+
+        /* Content wrapper for sidebar layout */
+        .main-layout {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+            padding: 0 20px;
+        }
+
+        .main-content {
+            min-width: 0;
+        }
+
+        @media (max-width: 1100px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .sidebar-area {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== TOP LEADERBOARD AD (Above Header - High Visibility) ===== -->
+    <span class="ad-label">إعلان</span>
+    <div class="ad-slot ad-slot-leaderboard" id="ad-top-leaderboard">
+        <div class="ad-placeholder">
+            <!-- استبدل هذا بكود AdSense الخاص بك -->
+            <ins class="adsbygoogle"
+                 style="display:inline-block;width:728px;height:90px"
+                 data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                 data-ad-slot="XXXXXXXXXX"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        </div>
+    </div>
+
+    <div class="bg-animation">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <header>
+        <div class="logo">
+            <div class="logo-icon">📁</div>
+            <span>محول الملفات</span>
+        </div>
+        <nav class="nav-links">
+            <a href="#" class="active">الرئيسية</a>
+            <a href="#pdf">تحويل PDF</a>
+            <a href="#compress">ضغط الملفات</a>
+            <a href="#merge">دمج PDF</a>
+        </nav>
+    </header>
+
+    <!-- ===== HERO IN-ARTICLE AD ===== -->
+    <span class="ad-label">إعلان</span>
+    <div class="ad-slot ad-slot-in-article" id="ad-hero-inarticle">
+        <div class="ad-placeholder">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                 data-ad-slot="XXXXXXXXXX"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        </div>
+    </div>
+
+    <section class="hero">
+        <h1>محول الملفات الذكي</h1>
+        <p>حوّل صورك إلى PDF، اضغط ملفاتك، ودمج ملفات PDF بسهولة وأمان تام - كل ذلك في متصفحك!</p>
+    </section>
+
+    <div class="main-layout">
+        <div class="main-content">
+            <div class="tools-container">
+                <!-- Image to PDF -->
+                <div class="tool-card" id="pdf">
+                    <div class="tool-icon pdf">🖼️</div>
+                    <h2>صورة إلى PDF</h2>
+                    <p>حوّل صورك بصيغ JPG و PNG و WEBP إلى ملف PDF بجودة عالية مع خيارات متقدمة.</p>
+
+                    <div class="upload-area" id="pdfUploadArea">
+                        <input type="file" id="pdfInput" accept="image/*" multiple>
+                        <span style="font-size: 3rem;">📤</span>
+                        <h3>اسحب الصور هنا أو انقر للاختيار</h3>
+                        <p>يدعم JPG, PNG, WEBP, GIF, BMP</p>
+                    </div>
+
+                    <div class="file-list" id="pdfFileList"></div>
+
+                    <!-- ===== IN-CARD AD (After Upload) ===== -->
+                    <span class="ad-label">إعلان</span>
+                    <div class="ad-slot ad-slot-wide" id="ad-pdf-card">
+                        <div class="ad-placeholder">
+                            <ins class="adsbygoogle"
+                                 style="display:inline-block;width:336px;height:280px"
+                                 data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                                 data-ad-slot="XXXXXXXXXX"></ins>
+                            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                        </div>
+                    </div>
+
+                    <div class="options">
+                        <h4>⚙️ الإعدادات</h4>
+                        <div class="option-row">
+                            <label>جودة الصورة</label>
+                            <input type="range" id="pdfQuality" min="0.3" max="1" step="0.1" value="0.9">
+                        </div>
+                        <div class="option-row">
+                            <label>حجم الصفحة</label>
+                            <select id="pageSize">
+                                <option value="a4">A4</option>
+                                <option value="letter">Letter</option>
+                                <option value="original">الحجم الأصلي</option>
+                            </select>
+                        </div>
+                        <div class="option-row">
+                            <label>الاتجاه</label>
+                            <select id="orientation">
+                                <option value="portrait">عمودي</option>
+                                <option value="landscape">أفقي</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="convertBtn" disabled>
+                        <span>🔄</span> تحويل إلى PDF
+                    </button>
+
+                    <div class="progress-container" id="pdfProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="pdfProgressFill"></div>
+                        </div>
+                        <div class="progress-text" id="pdfProgressText">0%</div>
+                    </div>
+
+                    <div class="result-area" id="pdfResult">
+                        <div class="success-icon">✅</div>
+                        <h3>تم التحويل بنجاح!</h3>
+                        <p id="pdfResultText"></p>
+                        <button class="btn btn-success" id="downloadPdfBtn">
+                            <span>⬇️</span> تحميل الملف
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Compress Files -->
+                <div class="tool-card" id="compress">
+                    <div class="tool-icon compress">🗜️</div>
+                    <h2>ضغط الملفات</h2>
+                    <p>اضغط صورك وملفاتك لتقليل حجمها بشكل كبير مع الحفاظ على الجودة.</p>
+
+                    <div class="upload-area" id="compressUploadArea">
+                        <input type="file" id="compressInput" accept="image/*" multiple>
+                        <span style="font-size: 3rem;">📦</span>
+                        <h3>اسحب الملفات هنا أو انقر للاختيار</h3>
+                        <p>يدعم JPG, PNG, WEBP</p>
+                    </div>
+
+                    <div class="file-list" id="compressFileList"></div>
+
+                    <div class="options">
+                        <h4>⚙️ مستوى الضغط</h4>
+                        <div class="option-row">
+                            <label>الجودة</label>
+                            <input type="range" id="compressQuality" min="0.1" max="0.9" step="0.1" value="0.6">
+                        </div>
+                        <div class="option-row">
+                            <label>الحد الأقصى للعرض</label>
+                            <select id="maxWidth">
+                                <option value="1920">1920px</option>
+                                <option value="1280">1280px</option>
+                                <option value="800">800px</option>
+                                <option value="original">الأصلي</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="compressBtn" disabled>
+                        <span>🗜️</span> اضغط الملفات
+                    </button>
+
+                    <div class="progress-container" id="compressProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="compressProgressFill"></div>
+                        </div>
+                        <div class="progress-text" id="compressProgressText">0%</div>
+                    </div>
+
+                    <div class="result-area" id="compressResult">
+                        <div class="success-icon">✅</div>
+                        <h3>تم الضغط بنجاح!</h3>
+                        <p id="compressResultText"></p>
+                        <button class="btn btn-success" id="downloadCompressBtn">
+                            <span>⬇️</span> تحميل الملفات المضغوطة
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Merge PDF -->
+                <div class="tool-card" id="merge">
+                    <div class="tool-icon merge">📑</div>
+                    <h2>دمج ملفات PDF</h2>
+                    <p>اجمع عدة ملفات PDF في ملف واحد مع إمكانية ترتيب الصفحات.</p>
+
+                    <div class="upload-area" id="mergeUploadArea">
+                        <input type="file" id="mergeInput" accept=".pdf" multiple>
+                        <span style="font-size: 3rem;">📚</span>
+                        <h3>اسحب ملفات PDF هنا أو انقر للاختيار</h3>
+                        <p>يدعم ملفات PDF فقط</p>
+                    </div>
+
+                    <div class="file-list" id="mergeFileList"></div>
+
+                    <button class="btn btn-primary" id="mergeBtn" disabled>
+                        <span>🔗</span> دمج الملفات
+                    </button>
+
+                    <div class="progress-container" id="mergeProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="mergeProgressFill"></div>
+                        </div>
+                        <div class="progress-text" id="mergeProgressText">0%</div>
+                    </div>
+
+                    <div class="result-area" id="mergeResult">
+                        <div class="success-icon">✅</div>
+                        <h3>تم الدمج بنجاح!</h3>
+                        <p id="mergeResultText"></p>
+                        <button class="btn btn-success" id="downloadMergeBtn">
+                            <span>⬇️</span> تحميل الملف المدمج
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Split PDF -->
+                <div class="tool-card" id="split">
+                    <div class="tool-icon split">✂️</div>
+                    <h2>تقسيم PDF</h2>
+                    <p>اقسم ملف PDF إلى صفحات منفصلة أو استخرج صفحات محددة.</p>
+
+                    <div class="upload-area" id="splitUploadArea">
+                        <input type="file" id="splitInput" accept=".pdf">
+                        <span style="font-size: 3rem;">📄</span>
+                        <h3>اسحب ملف PDF هنا أو انقر للاختيار</h3>
+                        <p>ملف PDF واحد فقط</p>
+                    </div>
+
+                    <div class="file-list" id="splitFileList"></div>
+
+                    <div class="options">
+                        <h4>⚙️ خيارات التقسيم</h4>
+                        <div class="option-row">
+                            <label>الوضع</label>
+                            <select id="splitMode">
+                                <option value="all">كل صفحة منفصلة</option>
+                                <option value="range">نطاق محدد</option>
+                            </select>
+                        </div>
+                        <div class="option-row" id="rangeRow" style="display:none;">
+                            <label>الصفحات (مثال: 1-3,5)</label>
+                            <input type="text" id="pageRange" placeholder="1-3,5" style="width:120px; background:var(--card); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:8px; font-family:'Tajawal';">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="splitBtn" disabled>
+                        <span>✂️</span> تقسيم الملف
+                    </button>
+
+                    <div class="progress-container" id="splitProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="splitProgressFill"></div>
+                        </div>
+                        <div class="progress-text" id="splitProgressText">0%</div>
+                    </div>
+
+                    <div class="result-area" id="splitResult">
+                        <div class="success-icon">✅</div>
+                        <h3>تم التقسيم بنجاح!</h3>
+                        <p id="splitResultText"></p>
+                        <button class="btn btn-success" id="downloadSplitBtn">
+                            <span>⬇️</span> تحميل الملفات
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== MIDDLE IN-ARTICLE AD (Between Tools) ===== -->
+            <span class="ad-label">إعلان</span>
+            <div class="ad-slot ad-slot-in-article" id="ad-middle-inarticle">
+                <div class="ad-placeholder">
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                         data-ad-slot="XXXXXXXXXX"
+                         data-ad-format="auto"
+                         data-full-width-responsive="true"></ins>
+                    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="tools-container" style="margin-top: 20px;">
+                <div class="tool-card" style="grid-column: 1 / -1;">
+                    <h2 style="text-align: center; margin-bottom: 20px;">📊 إحصائيات الاستخدام</h2>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="statConverted">0</div>
+                            <div class="stat-label">ملف محوّل</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statCompressed">0</div>
+                            <div class="stat-label">ملف مضغوط</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statSaved">0 MB</div>
+                            <div class="stat-label">مساحة موفرة</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SIDEBAR ADS (Desktop Only) ===== -->
+        <div class="sidebar-area">
+            <div class="sidebar-ad">
+                <span class="ad-label">إعلان</span>
+                <div class="ad-slot ad-slot-medium" id="ad-sidebar-1">
+                    <div class="ad-placeholder">
+                        <ins class="adsbygoogle"
+                             style="display:inline-block;width:300px;height:250px"
+                             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                             data-ad-slot="XXXXXXXXXX"></ins>
+                        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                    </div>
+                </div>
+
+                <span class="ad-label">إعلان</span>
+                <div class="ad-slot ad-slot-medium" id="ad-sidebar-2">
+                    <div class="ad-placeholder">
+                        <ins class="adsbygoogle"
+                             style="display:inline-block;width:300px;height:250px"
+                             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                             data-ad-slot="XXXXXXXXXX"></ins>
+                        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BOTTOM LEADERBOARD AD (Before Footer) ===== -->
+    <span class="ad-label">إعلان</span>
+    <div class="ad-slot ad-slot-leaderboard" id="ad-bottom-leaderboard">
+        <div class="ad-placeholder">
+            <ins class="adsbygoogle"
+                 style="display:inline-block;width:728px;height:90px"
+                 data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                 data-ad-slot="XXXXXXXXXX"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        </div>
+    </div>
+
+    <footer>
+        <p>🔒 جميع العمليات تتم في متصفحك - لا يتم رفع أي ملفات إلى السيرفر</p>
+        <p style="margin-top: 10px; font-size: 0.9rem;">محول الملفات الذكي © 2026</p>
+        <div class="legal-links">
+            <a href="privacy-policy.html">سياسة الخصوصية</a>
+            <a href="terms.html">الشروط والأحكام</a>
+            <a href="about.html">من نحن</a>
+            <a href="contact.html">اتصل بنا</a>
+            <a href="cookie-policy.html">سياسة الكوكيز</a>
+        </div>
+    </footer>
+
+    <!-- ===== ANCHOR AD (Sticky Bottom) ===== -->
+    <div class="ad-slot ad-slot-anchor" id="ad-anchor">
+        <div class="ad-placeholder">
+            <ins class="adsbygoogle"
+                 style="display:inline-block;width:320px;height:50px"
+                 data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                 data-ad-slot="XXXXXXXXXX"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==================== UTILITIES ====================
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const icons = {
+                'pdf': '📕', 'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️',
+                'webp': '🖼️', 'gif': '🖼️', 'bmp': '🖼️', 'zip': '📦'
+            };
+            return icons[ext] || '📄';
+        }
+
+        // ==================== DRAG & DROP ====================
+        function setupDragDrop(uploadArea, input) {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                input.files = e.dataTransfer.files;
+                input.dispatchEvent(new Event('change'));
+            });
+        }
+
+        // ==================== FILE LIST MANAGEMENT ====================
+        class FileManager {
+            constructor(inputId, listId, btnId, acceptMultiple = true) {
+                this.input = document.getElementById(inputId);
+                this.list = document.getElementById(listId);
+                this.btn = document.getElementById(btnId);
+                this.files = [];
+                this.acceptMultiple = acceptMultiple;
+
+                this.input.addEventListener('change', (e) => this.handleFiles(e));
+            }
+
+            handleFiles(e) {
+                const newFiles = Array.from(e.target.files);
+                if (!this.acceptMultiple) {
+                    this.files = newFiles.slice(0, 1);
+                } else {
+                    this.files = [...this.files, ...newFiles];
+                }
+                this.render();
+            }
+
+            removeFile(index) {
+                this.files.splice(index, 1);
+                this.render();
+            }
+
+            render() {
+                this.list.innerHTML = '';
+                this.files.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerHTML = `
+                        <div class="file-icon">${getFileIcon(file.name)}</div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatBytes(file.size)}</div>
+                        </div>
+                        <button class="remove-btn" onclick="fileManagers['${this.input.id}'].removeFile(${index})">✕</button>
+                    `;
+                    this.list.appendChild(item);
+                });
+                this.btn.disabled = this.files.length === 0;
+            }
+
+            clear() {
+                this.files = [];
+                this.input.value = '';
+                this.render();
+            }
+        }
+
+        const fileManagers = {};
+
+        // ==================== IMAGE TO PDF ====================
+        fileManagers['pdfInput'] = new FileManager('pdfInput', 'pdfFileList', 'convertBtn');
+        setupDragDrop(document.getElementById('pdfUploadArea'), document.getElementById('pdfInput'));
+
+        let pdfBlob = null;
+
+        document.getElementById('convertBtn').addEventListener('click', async () => {
+            const files = fileManagers['pdfInput'].files;
+            if (files.length === 0) return;
+
+            const btn = document.getElementById('convertBtn');
+            const progress = document.getElementById('pdfProgress');
+            const progressFill = document.getElementById('pdfProgressFill');
+            const progressText = document.getElementById('pdfProgressText');
+            const result = document.getElementById('pdfResult');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> جاري التحويل...';
+            progress.style.display = 'block';
+            result.classList.remove('show');
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: document.getElementById('orientation').value,
+                    unit: 'mm'
+                });
+
+                const quality = parseFloat(document.getElementById('pdfQuality').value);
+                const pageSize = document.getElementById('pageSize').value;
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const progressPercent = ((i + 1) / files.length) * 100;
+                    progressFill.style.width = progressPercent + '%';
+                    progressText.textContent = Math.round(progressPercent) + '%';
+
+                    const imgData = await readFileAsDataURL(file);
+                    const img = await loadImage(imgData);
+
+                    let pageWidth, pageHeight;
+                    if (pageSize === 'a4') {
+                        pageWidth = 210;
+                        pageHeight = 297;
+                    } else if (pageSize === 'letter') {
+                        pageWidth = 216;
+                        pageHeight = 279;
+                    } else {
+                        pageWidth = img.width * 0.264583;
+                        pageHeight = img.height * 0.264583;
+                    }
+
+                    if (i > 0) doc.addPage([pageWidth, pageHeight]);
+                    else { doc.internal.pageSize.width = pageWidth; doc.internal.pageSize.height = pageHeight; }
+
+                    const ratio = Math.min(pageWidth / (img.width * 0.264583), pageHeight / (img.height * 0.264583));
+                    const imgWidth = img.width * 0.264583 * ratio * 0.95;
+                    const imgHeight = img.height * 0.264583 * ratio * 0.95;
+                    const x = (pageWidth - imgWidth) / 2;
+                    const y = (pageHeight - imgHeight) / 2;
+
+                    const format = file.type === 'image/png' ? 'PNG' : 'JPEG';
+                    doc.addImage(imgData, format, x, y, imgWidth, imgHeight);
+                }
+
+                pdfBlob = doc.output('blob');
+
+                document.getElementById('pdfResultText').textContent = 
+                    `تم تحويل ${files.length} صورة إلى PDF (${formatBytes(pdfBlob.size)})`;
+                result.classList.add('show');
+
+                updateStats('converted', files.length);
+
+            } catch (error) {
+                showToast('حدث خطأ أثناء التحويل: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>🔄</span> تحويل إلى PDF';
+                progress.style.display = 'none';
+            }
+        });
+
+        document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+            if (pdfBlob) {
+                const url = URL.createObjectURL(pdfBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'converted_' + new Date().getTime() + '.pdf';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('تم تحميل الملف بنجاح!');
+            }
+        });
+
+        // ==================== COMPRESS FILES ====================
+        fileManagers['compressInput'] = new FileManager('compressInput', 'compressFileList', 'compressBtn');
+        setupDragDrop(document.getElementById('compressUploadArea'), document.getElementById('compressInput'));
+
+        let compressedZip = null;
+        let totalSaved = 0;
+
+        document.getElementById('compressBtn').addEventListener('click', async () => {
+            const files = fileManagers['compressInput'].files;
+            if (files.length === 0) return;
+
+            const btn = document.getElementById('compressBtn');
+            const progress = document.getElementById('compressProgress');
+            const progressFill = document.getElementById('compressProgressFill');
+            const progressText = document.getElementById('compressProgressText');
+            const result = document.getElementById('compressResult');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> جاري الضغط...';
+            progress.style.display = 'block';
+            result.classList.remove('show');
+
+            try {
+                const zip = new JSZip();
+                const quality = parseFloat(document.getElementById('compressQuality').value);
+                const maxWidth = document.getElementById('maxWidth').value;
+                let totalOriginal = 0;
+                let totalCompressed = 0;
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    totalOriginal += file.size;
+                    const progressPercent = ((i + 1) / files.length) * 100;
+                    progressFill.style.width = progressPercent + '%';
+                    progressText.textContent = Math.round(progressPercent) + '%';
+
+                    const compressed = await compressImage(file, quality, maxWidth);
+                    totalCompressed += compressed.size;
+                    zip.file('compressed_' + file.name, compressed);
+                }
+
+                compressedZip = await zip.generateAsync({ type: 'blob' });
+                const saved = totalOriginal - totalCompressed;
+                totalSaved += saved;
+
+                document.getElementById('compressResultText').textContent = 
+                    `تم ضغط ${files.length} ملف | الحجم الأصلي: ${formatBytes(totalOriginal)} | بعد الضغط: ${formatBytes(totalCompressed)} | توفير: ${formatBytes(saved)}`;
+                result.classList.add('show');
+
+                updateStats('compressed', files.length);
+                updateStats('saved', totalSaved);
+
+            } catch (error) {
+                showToast('حدث خطأ أثناء الضغط: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>🗜️</span> اضغط الملفات';
+                progress.style.display = 'none';
+            }
+        });
+
+        document.getElementById('downloadCompressBtn').addEventListener('click', () => {
+            if (compressedZip) {
+                const url = URL.createObjectURL(compressedZip);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'compressed_' + new Date().getTime() + '.zip';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('تم تحميل الملفات المضغوطة!');
+            }
+        });
+
+        // ==================== MERGE PDF ====================
+        fileManagers['mergeInput'] = new FileManager('mergeInput', 'mergeFileList', 'mergeBtn');
+        setupDragDrop(document.getElementById('mergeUploadArea'), document.getElementById('mergeInput'));
+
+        let mergedPdfBlob = null;
+
+        document.getElementById('mergeBtn').addEventListener('click', async () => {
+            const files = fileManagers['mergeInput'].files;
+            if (files.length === 0) return;
+
+            const btn = document.getElementById('mergeBtn');
+            const progress = document.getElementById('mergeProgress');
+            const progressFill = document.getElementById('mergeProgressFill');
+            const progressText = document.getElementById('mergeProgressText');
+            const result = document.getElementById('mergeResult');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> جاري الدمج...';
+            progress.style.display = 'block';
+            result.classList.remove('show');
+
+            try {
+                const mergedPdf = await PDFLib.PDFDocument.create();
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const progressPercent = ((i + 1) / files.length) * 100;
+                    progressFill.style.width = progressPercent + '%';
+                    progressText.textContent = Math.round(progressPercent) + '%';
+
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    pages.forEach(page => mergedPdf.addPage(page));
+                }
+
+                mergedPdfBlob = new Blob([await mergedPdf.save()], { type: 'application/pdf' });
+
+                document.getElementById('mergeResultText').textContent = 
+                    `تم دمج ${files.length} ملف PDF (${formatBytes(mergedPdfBlob.size)})`;
+                result.classList.add('show');
+
+            } catch (error) {
+                showToast('حدث خطأ أثناء الدمج: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>🔗</span> دمج الملفات';
+                progress.style.display = 'none';
+            }
+        });
+
+        document.getElementById('downloadMergeBtn').addEventListener('click', () => {
+            if (mergedPdfBlob) {
+                const url = URL.createObjectURL(mergedPdfBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'merged_' + new Date().getTime() + '.pdf';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('تم تحميل الملف المدمج!');
+            }
+        });
+
+        // ==================== SPLIT PDF ====================
+        fileManagers['splitInput'] = new FileManager('splitInput', 'splitFileList', 'splitBtn', false);
+        setupDragDrop(document.getElementById('splitUploadArea'), document.getElementById('splitInput'));
+
+        document.getElementById('splitMode').addEventListener('change', (e) => {
+            document.getElementById('rangeRow').style.display = 
+                e.target.value === 'range' ? 'flex' : 'none';
+        });
+
+        let splitZipBlob = null;
+
+        document.getElementById('splitBtn').addEventListener('click', async () => {
+            const files = fileManagers['splitInput'].files;
+            if (files.length === 0) return;
+
+            const btn = document.getElementById('splitBtn');
+            const progress = document.getElementById('splitProgress');
+            const progressFill = document.getElementById('splitProgressFill');
+            const progressText = document.getElementById('splitProgressText');
+            const result = document.getElementById('splitResult');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> جاري التقسيم...';
+            progress.style.display = 'block';
+            result.classList.remove('show');
+
+            try {
+                const file = files[0];
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                const totalPages = pdf.getPageCount();
+                const zip = new JSZip();
+                const mode = document.getElementById('splitMode').value;
+
+                let pagesToExtract = [];
+                if (mode === 'all') {
+                    pagesToExtract = Array.from({ length: totalPages }, (_, i) => i);
+                } else {
+                    const rangeStr = document.getElementById('pageRange').value;
+                    pagesToExtract = parsePageRange(rangeStr, totalPages);
+                }
+
+                for (let i = 0; i < pagesToExtract.length; i++) {
+                    const pageIndex = pagesToExtract[i];
+                    const progressPercent = ((i + 1) / pagesToExtract.length) * 100;
+                    progressFill.style.width = progressPercent + '%';
+                    progressText.textContent = Math.round(progressPercent) + '%';
+
+                    const newPdf = await PDFLib.PDFDocument.create();
+                    const [page] = await newPdf.copyPages(pdf, [pageIndex]);
+                    newPdf.addPage(page);
+                    const pdfBytes = await newPdf.save();
+                    zip.file(`page_${pageIndex + 1}.pdf`, pdfBytes);
+                }
+
+                splitZipBlob = await zip.generateAsync({ type: 'blob' });
+
+                document.getElementById('splitResultText').textContent = 
+                    `تم تقسيم الملف إلى ${pagesToExtract.length} صفحة`;
+                result.classList.add('show');
+
+            } catch (error) {
+                showToast('حدث خطأ أثناء التقسيم: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>✂️</span> تقسيم الملف';
+                progress.style.display = 'none';
+            }
+        });
+
+        document.getElementById('downloadSplitBtn').addEventListener('click', () => {
+            if (splitZipBlob) {
+                const url = URL.createObjectURL(splitZipBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'split_' + new Date().getTime() + '.zip';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('تم تحميل الملفات!');
+            }
+        });
+
+        // ==================== HELPER FUNCTIONS ====================
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        function compressImage(file, quality, maxWidth) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (maxWidth !== 'original' && width > parseInt(maxWidth)) {
+                            const ratio = parseInt(maxWidth) / width;
+                            width = parseInt(maxWidth);
+                            height = height * ratio;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            resolve(blob);
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function parsePageRange(rangeStr, totalPages) {
+            const pages = new Set();
+            const parts = rangeStr.split(',');
+            for (const part of parts) {
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(Number);
+                    for (let i = start - 1; i < end && i < totalPages; i++) {
+                        pages.add(i);
+                    }
+                } else {
+                    const page = Number(part) - 1;
+                    if (page >= 0 && page < totalPages) pages.add(page);
+                }
+            }
+            return Array.from(pages).sort((a, b) => a - b);
+        }
+
+        // ==================== STATS ====================
+        let stats = { converted: 0, compressed: 0, saved: 0 };
+
+        function updateStats(type, value) {
+            if (type === 'converted') {
+                stats.converted += value;
+                document.getElementById('statConverted').textContent = stats.converted;
+            } else if (type === 'compressed') {
+                stats.compressed += value;
+                document.getElementById('statCompressed').textContent = stats.compressed;
+            } else if (type === 'saved') {
+                stats.saved = value;
+                document.getElementById('statSaved').textContent = formatBytes(stats.saved);
+            }
+        }
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = link.getAttribute('href');
+                if (target !== '#') {
+                    document.querySelector(target).scrollIntoView({ behavior: 'smooth' });
+                }
+                document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
